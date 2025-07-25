@@ -161,7 +161,7 @@
         perguntas.push({ enunciado, respostas });
       });
 
-      const res = await fetch("http://127.0.0.1:8000/criar_quiz", {
+      const res = await fetch("/criar_quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ titulo, conteudos, perguntas })
@@ -176,7 +176,7 @@
 
     async function iniciarPartida() {
       const quiz_id = parseInt(document.getElementById("pin_input").value);
-      const res = await fetch("http://127.0.0.1:8000/iniciar_partida", {
+      const res = await fetch("/iniciar_partida", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ quiz_id })
@@ -236,7 +236,7 @@
         return;
       }
 
-      fetch(`http://127.0.0.1:8000/ranking/${pin}`)
+      fetch(`/ranking/${pin}`)
         .then(res => {
           if (!res.ok) throw new Error("Erro ao buscar ranking.");
           return res.json();
