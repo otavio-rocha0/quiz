@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Entrar na Partida - Tavinhoot</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 space-y-6">
+    <h1 class="text-3xl font-extrabold text-center text-gray-800">🔐 Entrar na Partida</h1>
+
+    <div class="space-y-4">
+      <input
+        id="nome"
+        type="text"
+        placeholder="Seu nome"
+        class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+      />
+
+      <input
+        id="pin"
+        type="text"
+        placeholder="PIN da partida"
+        class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+      />
+
+      <button
+        onclick="prosseguirParaPersonalizacao()"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-300 shadow-md"
+      >
+        Próximo
+      </button>
+    </div>
+  </div>
+
+  <script>
+    function prosseguirParaPersonalizacao() {
+      const nome = document.getElementById("nome").value.trim();
+      const pin = document.getElementById("pin").value.trim();
+
+      if (!nome || !pin) {
+        alert("Preencha seu nome e o PIN da sala.");
+        return;
+      }
+
+      localStorage.setItem("nome", nome);
+      localStorage.setItem("pin", pin);
+
+      window.location.href = "personalizar.html";
+    }
+  </script>
+</body>
+</html>

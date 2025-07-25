@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel da Professora - Kahoot Clone</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-b from-purple-100 to-white min-h-screen p-6 flex items-center justify-center">
+
+  <div class="w-full max-w-4xl bg-white p-8 rounded-3xl shadow-2xl space-y-10">
+    <h1 class="text-3xl font-extrabold text-center text-purple-700">🎓 Painel da Professora</h1>
+
+    <!-- Criar Quiz -->
+    <section class="space-y-4">
+      <h2 class="text-2xl font-bold text-gray-800 border-b pb-2">📝 Criar Novo Quiz</h2>
+
+      <input id="titulo" type="text" placeholder="Título do Quiz"
+             class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" />
+
+      <input id="conteudos" type="text" placeholder="Conteúdos estudados (ex: cinemática, MRU)"
+             class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" />
+
+      <input id="prompt_ia" type="text" placeholder="Prompt personalizado (opcional)"
+             class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" />
+
+      <button onclick="gerarPerguntaIA()" 
+              class="bg-indigo-600 text-white px-5 py-3 rounded-xl hover:bg-indigo-700 transition transform hover:scale-105 w-full text-lg font-medium">
+        🤖 Gerar pergunta automaticamente com IA
+      </button>
+
+      <div id="perguntas" class="space-y-4">
+        <!-- Perguntas geradas aparecerão aqui -->
+      </div>
+
+      <button onclick="adicionarPergunta()" 
+              class="bg-blue-500 text-white px-5 py-3 rounded-xl hover:bg-blue-600 transition transform hover:scale-105 w-full text-lg font-medium">
+        + Adicionar Pergunta Manual
+      </button>
+
+      <button onclick="criarQuiz()" 
+              class="bg-green-500 text-white px-5 py-3 rounded-xl hover:bg-green-600 transition transform hover:scale-105 w-full text-lg font-semibold">
+        ✅ Criar Quiz
+      </button>
+    </section>
+
+    <!-- Iniciar Partida -->
+    <section class="space-y-4 border-t pt-6">
+      <h2 class="text-2xl font-bold text-gray-800">🚀 Iniciar Partida</h2>
+      
+      <input id="pin_input" type="number" placeholder="ID do Quiz"
+             class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" />
+
+      <button onclick="iniciarPartida()" 
+              class="bg-purple-600 text-white px-5 py-3 rounded-xl hover:bg-purple-700 transition transform hover:scale-105 w-full text-lg font-medium">
+        ▶️ Iniciar Partida
+      </button>
+
+      <p id="pinArea" class="text-2xl font-bold text-center text-indigo-700"></p>
+
+      <!-- Botão Ver Ranking -->
+      <button onclick="abrirModalRanking()" 
+              class="mt-4 bg-yellow-500 text-white px-4 py-2 rounded-xl hover:bg-yellow-600 transition">
+        📊 Ver Ranking da Sessão
+      </button>
+    </section>
+  </div>
+
+  <!-- Modal de Ranking -->
+  <div id="modalRanking" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+    <div class="bg-white w-full max-w-3xl rounded-xl shadow-xl p-6 relative">
+
+      <button onclick="fecharModalRanking()" class="absolute top-2 right-4 text-2xl text-gray-600 hover:text-red-500">×</button>
+
+      <h2 class="text-2xl font-semibold text-indigo-700 mb-4">🏆 Ver Ranking</h2>
+
+      <div class="flex gap-4 mb-4">
+        <input id="inputPinRanking" type="number" placeholder="Digite o PIN"
+               class="border border-gray-300 rounded-lg px-4 py-2 flex-1" />
+        <button onclick="carregarRankingModal()" 
+                class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+          Buscar
+        </button>
+      </div>
+
+      <table class="min-w-full border-separate border-spacing-y-2 text-left">
+        <thead>
+          <tr class="bg-indigo-100 text-indigo-700">
+            <th class="py-2 px-4">Avatar</th>
+            <th class="py-2 px-4">#</th>
+            <th class="py-2 px-4">Nome</th>
+            <th class="py-2 px-4">Pontuação</th>
+          </tr>
+        </thead>
+        <tbody id="rankingModalBody" class="text-gray-700">
+          <!-- Linhas do ranking serão inseridas aqui -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    let perguntaCount = 0;
+
+    function adicionarPergunta(perguntaTexto = "", respostas = []) {
+      perguntaCount++;
+      const perguntasDiv = document.getElementById("perguntas");
+
+      const perguntaHTML = document.createElement("div");
+      perguntaHTML.className = "border p-4 rounded space-y-2 bg-gray-50";
+
+      perguntaHTML.innerHTML = `
+        <input type="text" placeholder="Pergunta ${perguntaCount}"
+               class="w-full px-3 py-2 border rounded pergunta" value="${perguntaTexto}" />
+
+        <div class="space-y-1 respostas">
+          ${[0,1,2,3].map(i => {
+            const texto = respostas[i]?.texto || "";
+            const correta = respostas[i]?.correta ? "checked" : "";
+            return `
+              <div class="flex items-center gap-2">
+                <input type="checkbox" class="corretaCheckbox" onchange="garantirUnicaResposta(this)" ${correta} />
+                <input type="text" placeholder="Resposta ${i+1}" class="w-full px-3 py-2 border rounded resposta" value="${texto}" />
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+
+      perguntasDiv.appendChild(perguntaHTML);
+    }
+
+    function garantirUnicaResposta(marcado) {
+      const container = marcado.closest(".respostas");
+      const checkboxes = container.querySelectorAll(".corretaCheckbox");
+      checkboxes.forEach(cb => {
+        if (cb !== marcado) cb.checked = false;
+      });
+    }
+
+    async function criarQuiz() {
+      const titulo = document.getElementById("titulo").value;
+      const conteudos = document.getElementById("conteudos").value;
+      const perguntas = [];
+
+      document.querySelectorAll(".pergunta").forEach((pEl) => {
+        const enunciado = pEl.value;
+        const respostas = [];
+
+        const container = pEl.closest("div");
+        const respostaInputs = container.querySelectorAll(".respostas .resposta");
+        const checkboxes = container.querySelectorAll(".respostas .corretaCheckbox");
+
+        respostaInputs.forEach((input, idx) => {
+          respostas.push({
+            texto: input.value,
+            correta: checkboxes[idx].checked
+          });
+        });
+
+        perguntas.push({ enunciado, respostas });
+      });
+
+      const res = await fetch("http://127.0.0.1:8000/criar_quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ titulo, conteudos, perguntas })
+      });
+
+      const data = await res.json();
+      alert(data.mensagem + (data.quiz_id ? ` (ID: ${data.quiz_id})` : ""));
+      if (data.quiz_id) {
+        document.getElementById("pin_input").value = data.quiz_id;
+      }
+    }
+
+    async function iniciarPartida() {
+      const quiz_id = parseInt(document.getElementById("pin_input").value);
+      const res = await fetch("http://127.0.0.1:8000/iniciar_partida", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quiz_id })
+      });
+
+      const data = await res.json();
+      if (data.pin) {
+        document.getElementById("pin_input").value = data.pin;
+        document.getElementById("pinArea").innerText = `PIN da partida: ${data.pin}`;
+        alert(`Partida criada com sucesso! PIN: ${data.pin}`);
+      } else {
+        alert(data.mensagem || "Erro ao iniciar partida");
+      }
+    }
+
+    async function gerarPerguntaIA() {
+      const conteudo = document.getElementById("conteudos").value;
+      const prompt = document.getElementById("prompt_ia").value;
+
+      const res = await fetch("/gerar_pergunta", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conteudo, prompt })
+      });
+
+      const data = await res.json();
+
+      if (data.pergunta && data.respostas) {
+        try {
+          adicionarPergunta(data.pergunta, data.respostas);
+        } catch (e) {
+          alert("Erro ao interpretar a resposta da IA. Verifique o console.");
+          console.error("Resposta da IA:", data);
+        }
+      } else {
+        alert("Erro: " + (data.erro || "Resposta inesperada da IA."));
+      }
+    }
+
+    // ====== Modal Ranking ======
+    function abrirModalRanking() {
+      document.getElementById("modalRanking").classList.remove("hidden");
+    }
+
+    function fecharModalRanking() {
+      document.getElementById("modalRanking").classList.add("hidden");
+      document.getElementById("rankingModalBody").innerHTML = "";
+      document.getElementById("inputPinRanking").value = "";
+    }
+
+    function carregarRankingModal() {
+      const pin = document.getElementById("inputPinRanking").value.trim();
+      const tbody = document.getElementById("rankingModalBody");
+
+      if (!pin) {
+        alert("Digite um PIN válido.");
+        return;
+      }
+
+      fetch(`http://127.0.0.1:8000/ranking/${pin}`)
+        .then(res => {
+          if (!res.ok) throw new Error("Erro ao buscar ranking.");
+          return res.json();
+        })
+        .then(data => {
+          tbody.innerHTML = "";
+
+          data.forEach((jogador, index) => {
+            const row = document.createElement("tr");
+
+            const avatarCell = document.createElement("td");
+            try {
+              const personagem = typeof jogador.personagem === "string" ? JSON.parse(jogador.personagem) : jogador.personagem;
+              avatarCell.textContent = personagem.emoji || "❓";
+            } catch {
+              avatarCell.textContent = "❓";
+            }
+            avatarCell.className = "py-2 px-4 text-xl";
+            row.appendChild(avatarCell);
+
+            const posCell = document.createElement("td");
+            posCell.className = "py-2 px-4 font-semibold";
+            posCell.textContent = index + 1;
+            row.appendChild(posCell);
+
+            const nomeCell = document.createElement("td");
+            nomeCell.className = "py-2 px-4";
+            nomeCell.textContent = jogador.nome;
+            row.appendChild(nomeCell);
+
+            const scoreCell = document.createElement("td");
+            scoreCell.className = "py-2 px-4";
+            scoreCell.textContent = jogador.pontuacao;
+            row.appendChild(scoreCell);
+
+            tbody.appendChild(row);
+          });
+        })
+        .catch(error => {
+          alert("Erro: " + error.message);
+          tbody.innerHTML = "";
+        });
+    }
+  </script>
+</body>
+</html>

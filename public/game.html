@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quiz em Ação</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-white min-h-screen flex flex-col">
+
+  <!-- Header da pergunta -->
+  <header class="bg-indigo-100 py-6 px-4 flex items-center justify-between shadow">
+    <h1 id="pergunta" class="text-2xl md:text-3xl font-semibold text-center flex-1 text-indigo-800">
+      Carregando pergunta...
+    </h1>
+    <button id="skipBtn" class="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition hidden">
+      Pular
+    </button>
+  </header>
+
+  <!-- Corpo principal -->
+  <main class="flex-1 flex flex-col items-center justify-center px-6 py-10 gap-10">
+
+    <!-- Área de Jogo -->
+    <section class="flex flex-col md:flex-row items-center justify-center w-full max-w-6xl gap-8">
+
+      <!-- Timer -->
+  <div class="flex-shrink-0 flex flex-col items-center">
+    <div id="timer" class="w-24 h-24 rounded-full bg-purple-600 text-white flex items-center justify-center text-2xl font-bold shadow">
+      20
+    </div>
+    <div id="playerAvatar" class="mt-4"></div>
+  </div>
+
+      <!-- Respostas -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-3xl">
+        <button onclick="selecionarResposta(0)" class="bg-red-500 hover:bg-red-600 text-white text-lg font-semibold rounded-xl p-6 flex items-center gap-3 transition">
+          <span class="text-2xl">▲</span> <span id="resposta0">Resposta 1</span>
+        </button>
+        <button onclick="selecionarResposta(1)" class="bg-blue-500 hover:bg-blue-600 text-white text-lg font-semibold rounded-xl p-6 flex items-center gap-3 transition">
+          <span class="text-2xl">◆</span> <span id="resposta1">Resposta 2</span>
+        </button>
+        <button onclick="selecionarResposta(2)" class="bg-yellow-500 hover:bg-yellow-600 text-white text-lg font-semibold rounded-xl p-6 flex items-center gap-3 transition">
+          <span class="text-2xl">●</span> <span id="resposta2">Resposta 3</span>
+        </button>
+        <button onclick="selecionarResposta(3)" class="bg-green-500 hover:bg-green-600 text-white text-lg font-semibold rounded-xl p-6 flex items-center gap-3 transition">
+          <span class="text-2xl">■</span> <span id="resposta3">Resposta 4</span>
+        </button>
+      </div>
+
+      <!-- Contador -->
+      <div class="flex-shrink-0 text-center text-gray-700">
+        <p id="respostas" class="text-4xl font-bold">0</p>
+        <p class="text-sm">Respostas certas</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Popup Resultado -->
+  <div id="popupResultado" class="fixed top-6 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-xl shadow-lg text-lg font-semibold hidden z-50">
+    <span id="popupMensagem"></span>
+  </div>
+
+  <script>
+    let tempo = 20;
+    let tempoMaximo = 20;
+    let intervalo;
+    let perguntas = [];
+    let indicePerguntaAtual = 0;
+    let perguntaId = null;
+    let respostasApi = [];
+
+    const playerId = localStorage.getItem("player_id");
+    const pin = localStorage.getItem("pin");
+    let playerAvatar = null;
+
+    if (!playerId || !pin) {
+      alert("Informações inválidas. Voltando à tela inicial.");
+      window.location.href = "index.html";
+    }
+
+    async function fetchPlayerAvatar() {
+      const res = await fetch(`http://127.0.0.1:8000/player/${playerId}`);
+      if (res.ok) {
+        const data = await res.json();
+        playerAvatar = data.avatar;
+        displayPlayerAvatar();
+      }
+    }
+
+    function displayPlayerAvatar() {
+      if (!playerAvatar) return;
+      const avatarDiv = document.getElementById("playerAvatar");
+      if (avatarDiv) {
+        avatarDiv.innerHTML = `<img src=\`/avatars/${playerAvatar}.png\` alt=\"Avatar\" class=\"w-24 h-24 rounded-full\" />`;
+      }
+    }
+
+    window.onload = () => {
+      fetchPlayerAvatar();
+      carregarTodasPerguntas();
+    };
+
+    async function carregarTodasPerguntas() {
+      const res = await fetch(`http://127.0.0.1:8000/perguntas/${pin}`);
+      perguntas = await res.json();
+
+      if (perguntas.length === 0) {
+        alert("Nenhuma pergunta disponível.");
+        return;
+      }
+
+      indicePerguntaAtual = 0;
+      mostrarPerguntaAtual();
+    }
+
+    function mostrarPerguntaAtual() {
+      const pergunta = perguntas[indicePerguntaAtual];
+
+      if (!pergunta) {
+        alert("Fim do quiz!");
+        window.location.href = "ranking.html";
+        return;
+      }
+
+      perguntaId = pergunta.id;
+      respostasApi = pergunta.respostas;
+
+      document.getElementById("pergunta").innerText = pergunta.enunciado;
+
+      pergunta.respostas.forEach((resposta, i) => {
+        const span = document.getElementById("resposta" + i);
+        if (span) span.innerText = resposta.texto;
+      });
+
+      document.getElementById("respostas").innerText = "0";
+      iniciarTimer();
+    }
+
+    function iniciarTimer() {
+      clearInterval(intervalo);
+      tempo = tempoMaximo;
+      document.getElementById("timer").innerText = tempo;
+
+      intervalo = setInterval(() => {
+        tempo--;
+        document.getElementById("timer").innerText = tempo;
+        if (tempo <= 0) {
+          clearInterval(intervalo);
+          mostrarResultadoFinal();
+        }
+      }, 1000);
+    }
+
+    async function selecionarResposta(indice) {
+      if (!respostasApi[indice]) return;
+
+      clearInterval(intervalo);
+      document.getElementById("respostas").innerText = "1";
+
+      const resposta_id = respostasApi[indice].id;
+      const pontuacao = Math.floor(1000 * (tempo / tempoMaximo));
+
+      const res = await fetch("http://127.0.0.1:8000/responder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          player_id: playerId,
+          question_id: perguntaId,
+          resposta_id,
+          pontuacao
+        })
+      });
+
+      const data = await res.json();
+      mostrarResultadoFinal(data);
+    }
+
+    function mostrarPopup(tipo, mensagem) {
+      const popup = document.getElementById("popupResultado");
+      popup.classList.remove("hidden");
+
+      const mensagemSpan = document.getElementById("popupMensagem");
+      mensagemSpan.innerText = mensagem;
+
+      setTimeout(() => {
+        popup.classList.add("hidden");
+        indicePerguntaAtual++;
+        mostrarPerguntaAtual();
+      }, 2500);
+    }
+
+    function mostrarResultadoFinal(data = {}) {
+      console.log("Resposta recebida da API:", data);
+
+      if (data.correta) {
+        mostrarPopup("acerto", "✅ Você acertou!");
+      } else {
+        mostrarPopup("erro", "❌ Você errou!");
+      }
+    }
+
+    window.onload = carregarTodasPerguntas;
+  </script>
+</body>
+</html>

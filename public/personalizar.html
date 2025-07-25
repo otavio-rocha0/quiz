@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Personalizar Personagem - Tavinhoot</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 space-y-6 text-center">
+    <h1 class="text-3xl font-extrabold text-gray-800">🎨 Personalize seu Personagem</h1>
+
+    <div class="space-y-4">
+      <!-- Emoji selector -->
+      <div>
+        <label for="emoji" class="block text-lg font-semibold text-gray-700 mb-2">Escolha seu emoji:</label>
+        <select id="emoji" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-400 text-2xl text-center">
+          <option>🧙</option>
+          <option>🧛‍♂️</option>
+          <option>🧑‍🚀</option>
+          <option>🤖</option>
+          <option>👽</option>
+          <option>🐉</option>
+        </select>
+      </div>
+
+      <!-- Cor selector -->
+      <div>
+        <label for="cor" class="block text-lg font-semibold text-gray-700 mb-2">Cor do personagem:</label>
+        <input type="color" id="cor" class="w-full h-14 rounded-lg border border-gray-300 shadow-sm cursor-pointer">
+      </div>
+
+      <!-- Preview -->
+      <div class="mt-6">
+        <div id="preview" class="mx-auto w-24 h-24 flex items-center justify-center text-4xl rounded-full border-4 border-gray-300 shadow-lg"></div>
+      </div>
+
+      <!-- Botão começar -->
+      <button
+        onclick="comecar()"
+        class="w-full bg-pink-600 hover:bg-pink-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-300 shadow-md"
+      >
+        Começar
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const emojiSelect = document.getElementById("emoji");
+    const corInput    = document.getElementById("cor");
+    const preview     = document.getElementById("preview");
+
+    function atualizarPreview() {
+        preview.textContent       = emojiSelect.value;
+        preview.style.backgroundColor = corInput.value;
+    }
+    emojiSelect.addEventListener("change", atualizarPreview);
+    corInput.addEventListener("input", atualizarPreview);
+    atualizarPreview();               // inicia preview
+
+    async function comecar() {
+        const nome = localStorage.getItem("nome");
+        const pin  = localStorage.getItem("pin");
+        if (!nome || !pin) {
+        alert("Erro: Nome ou PIN não encontrado.");
+        return;
+        }
+
+        const personagem = {
+        emoji: emojiSelect.value,
+        cor  : corInput.value
+        };
+
+        const response = await fetch("/entrar", {
+        method : "POST",
+        headers: { "Content-Type": "application/json" },
+        body   : JSON.stringify({ nome, pin, personagem })   // ✅
+        });
+
+        const data = await response.json();
+        if (data.player_id) {
+        localStorage.setItem("player_id", data.player_id);
+        window.location.href = "game.html";
+        } else {
+        alert(data.erro || data.mensagem || "Erro ao entrar na partida.");
+        }
+    }
+    </script>
+</body>
+</html>

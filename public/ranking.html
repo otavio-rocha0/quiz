@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ranking Final</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-b from-indigo-100 to-white min-h-screen flex items-center justify-center px-4">
+
+  <div class="w-full max-w-3xl bg-white p-8 rounded-2xl shadow-2xl text-center">
+    <h1 class="text-4xl font-extrabold text-indigo-700 mb-8 flex items-center justify-center gap-2">
+      🏆 Ranking Final
+    </h1>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-left border-separate border-spacing-y-2">
+        <thead>
+          <tr class="bg-indigo-100 text-indigo-700">
+            <th class="py-3 px-4 text-sm font-semibold">Avatar</th>
+            <th class="py-3 px-4 text-sm font-semibold">#</th>
+            <th class="py-3 px-4 text-sm font-semibold">Nome</th>
+            <th class="py-3 px-4 text-sm font-semibold">Pontuação</th>
+          </tr>
+        </thead>
+        <tbody id="ranking-table" class="text-gray-800">
+          <!-- Linhas do ranking serão inseridas aqui -->
+        </tbody>
+      </table>
+    </div>
+
+    <button 
+      onclick="window.location.href='index.html'"
+      class="mt-10 bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition transform hover:scale-105"
+    >
+      Voltar ao Início
+    </button>
+  </div>
+
+  <script>
+    function carregarRanking() {
+      const pin = localStorage.getItem("pin"); // Corrigido para localStorage
+
+      if (!pin) {
+        alert("PIN não encontrado. Volte à página inicial.");
+        window.location.href = "index.html";
+        return;
+      }
+
+      const url = `http://127.0.0.1:8000/ranking/${pin}`;
+
+      fetch(url)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error("Erro ao buscar dados do ranking");
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (!Array.isArray(data)) {
+            console.error("A resposta da API não é um array de ranking", data);
+            return;
+          }
+
+          const rankingTable = document.getElementById("ranking-table");
+          rankingTable.innerHTML = "";
+
+          data.forEach((player, index) => {
+            const row = document.createElement("tr");
+
+            const avatarCell = document.createElement("td");
+            avatarCell.className = "py-2 px-4 text-center text-2xl";
+            try {
+              const personagem = typeof player.personagem === "string" 
+                ? JSON.parse(player.personagem) 
+                : player.personagem;
+              avatarCell.textContent = personagem.emoji || "❓";
+            } catch {
+              avatarCell.textContent = "❓";
+            }
+            row.appendChild(avatarCell);
+
+            const posCell = document.createElement("td");
+            posCell.className = "py-2 px-4 font-semibold";
+            posCell.textContent = index + 1;
+            row.appendChild(posCell);
+
+            const nameCell = document.createElement("td");
+            nameCell.className = "py-2 px-4";
+            nameCell.textContent = player.nome;
+            row.appendChild(nameCell);
+
+            const scoreCell = document.createElement("td");
+            scoreCell.className = "py-2 px-4";
+            scoreCell.textContent = player.pontuacao;
+            row.appendChild(scoreCell);
+
+            rankingTable.appendChild(row);
+          });
+        })
+        .catch(error => {
+          console.error("Erro ao carregar o ranking:", error);
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", carregarRanking);
+  </script>
+  
+</body>
+</html>
