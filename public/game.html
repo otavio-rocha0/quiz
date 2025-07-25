@@ -80,7 +80,7 @@
     }
 
     async function fetchPlayerAvatar() {
-      const res = await fetch(`http://127.0.0.1:8000/player/${playerId}`);
+      const res = await fetch(`/player/${playerId}`);
       if (res.ok) {
         const data = await res.json();
         playerAvatar = data.avatar;
@@ -102,7 +102,7 @@
     };
 
     async function carregarTodasPerguntas() {
-      const res = await fetch(`http://127.0.0.1:8000/perguntas/${pin}`);
+      const res = await fetch(`/perguntas/${pin}`);
       perguntas = await res.json();
 
       if (perguntas.length === 0) {
@@ -161,7 +161,7 @@
       const resposta_id = respostasApi[indice].id;
       const pontuacao = Math.floor(1000 * (tempo / tempoMaximo));
 
-      const res = await fetch("http://127.0.0.1:8000/responder", {
+      const res = await fetch("/responder", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
